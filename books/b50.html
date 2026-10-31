@@ -2905,5 +2905,37 @@ function doPrint(){
   </div>
 </div>
 <script>/*navbrand*/function vpSyncTog(){var s=document.getElementById('stage');if(!s)return;var p=document.getElementById('vpPic'),c=document.getElementById('vpCalm');if(p)p.classList.toggle('on',!s.classList.contains('no-pic'));if(c)c.classList.toggle('on',s.classList.contains('calm'));}document.addEventListener('DOMContentLoaded',vpSyncTog);</script>
-</body>
+<script>/*herofit*/ /*v4*/(function(){
+var FLOOR=100, SAFE=8, busy=false;
+function px(v){return parseFloat(v)||0;}
+function fitCard(rc){
+  if(rc.classList.contains('read-card--row')) return;
+  var im=rc.querySelector('img.hero-img'); if(!im||!im.offsetParent) return;
+  if(!im.complete||!im.naturalWidth){ im.addEventListener('load',run,{once:true}); return; }
+  ['width','height','max-width','max-height'].forEach(function(k){im.style.removeProperty(k);});
+  var ar=im.naturalHeight/im.naturalWidth, r0=im.getBoundingClientRect();
+  var h0=Math.min(r0.height, r0.width*ar);    // 엔진 원래 '보이는' 높이 — 이보다 작게는 안 한다(넘칠 때만 예외)
+  var cs=getComputedStyle(rc), inner=rc.clientHeight-px(cs.paddingTop)-px(cs.paddingBottom);
+  var maxW=rc.clientWidth-px(cs.paddingLeft)-px(cs.paddingRight);
+  var gap=px(cs.rowGap), kids=[].filter.call(rc.children,function(e){return e.offsetParent;}), used=0;
+  kids.forEach(function(e){var s=getComputedStyle(e); used+=e.getBoundingClientRect().height+px(s.marginTop)+px(s.marginBottom);});
+  used+=gap*Math.max(0,kids.length-1);
+  var target=Math.max(h0, Math.floor(inner-(used-r0.height)-SAFE));
+  function set(h){ h=Math.floor(Math.min(h, maxW*ar));   // 폭이 카드를 넘지 않게, 비율 유지(작은 원본도 확대)
+    im.style.setProperty('width',Math.floor(h/ar)+'px','important'); im.style.setProperty('height',h+'px','important');
+    im.style.setProperty('max-width','none','important'); im.style.setProperty('max-height','none','important'); return h; }
+  var h=set(target);
+  var over=rc.scrollHeight-rc.clientHeight;   // 넘치면 넘친 만큼 줄인다(원래부터 넘치던 긴 문장 쪽 포함)
+  if(over>0) set(Math.max(Math.min(FLOOR,h0), h-over-2));   // -2: 소수점 반올림으로 1px 넘침 방지
+}
+var ro=window.ResizeObserver?new ResizeObserver(function(){run();}):null;
+function run(){ if(busy) return; busy=true; requestAnimationFrame(function(){
+  document.querySelectorAll('.read-card').forEach(function(rc){
+    fitCard(rc);
+    if(ro){ ro.observe(rc); var s=rc.querySelector('.read-sentence'); if(s) ro.observe(s); }
+  });
+  busy=false; }); }
+new MutationObserver(run).observe(document.documentElement,{childList:true,subtree:true,characterData:true});
+window.addEventListener('resize',run); window.addEventListener('load',run); run();
+})();</script></body>
 </html>
